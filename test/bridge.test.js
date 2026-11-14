@@ -69,13 +69,17 @@ async function startBridge(raw = { mqtt_url: 'broker:1883' }) {
   return { gladys, bridge, clients, statuses, ids: gladys.externalIds('robot', IDENTIFIER) };
 }
 
-async function announce(client) {
+async function announce(client, { online = true } = {}) {
   client.open();
   for (const [topic, payload] of discoveryMessages()) {
     client.receive(topic, payload);
   }
   client.receive(...FOREIGN_MESSAGE);
   await tick();
+  if (online) {
+    client.receive(TOPICS.availability, 'ready');
+    await tick();
+  }
 }
 
 test('without a broker address nothing connects and the status says why', async () => {
@@ -142,6 +146,43 @@ test('commands are published on the robot topics, and refused when offline', asy
   );
   client.connected = false;
   await assert.rejects(bridge.setValue({ external_id: ids.feature('dock') }, 1), /not connected/);
+  await bridge.stop();
+});
+
+test('the robot availability drives the transport badge and blocks commands', async () => {
+  const { gladys, bridge, clients, ids } = await startBridge();
+  const [client] = clients;
+  await announce(client, { online: false });
+  const last = () => gladys.fake.transports.at(-1);
+
+  // Nothing known yet: unreachable, and the availability topic is watched.
+  assert.ok(client.subscriptions.has(TOPICS.availability));
+  assert.deepEqual(last(), { device_external_id: ids.device, transport: 'unreachable' });
+  await assert.rejects(bridge.setValue({ external_id: ids.feature('dock') }, 1), /unreachable/);
+  assert.deepEqual(client.published, []);
+
+  client.receive(TOPICS.availability, 'ready');
+  await tick();
+  assert.deepEqual(last(), { device_external_id: ids.device, transport: 'local' });
+  await bridge.setValue({ external_id: ids.feature('dock') }, 1);
+  assert.equal(client.published.length, 1);
+
+  // Same value again: no new publication.
+  const count = gladys.fake.transports.length;
+  client.receive(TOPICS.availability, 'ready');
+  await tick();
+  assert.equal(gladys.fake.transports.length, count);
+
+  // Last will of the robot, then loss of the broker itself.
+  client.receive(TOPICS.availability, 'lost');
+  await tick();
+  assert.equal(last().transport, 'unreachable');
+  client.receive(TOPICS.availability, 'ready');
+  await tick();
+  client.connected = false;
+  client.emit('close');
+  await tick();
+  assert.equal(last().transport, 'unreachable');
   await bridge.stop();
 });
 

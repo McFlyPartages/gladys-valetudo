@@ -48,6 +48,9 @@ In the Valetudo web interface, open **Connectivity → MQTT**, then:
 - **Connected, but no robot in Discovery**: check that the Home Assistant
   autodiscovery is enabled in Valetudo, and that the discovery prefix is the
   same on both sides (`homeassistant` by default).
+- **The robot shows as unreachable**: Valetudo lost its connection to the
+  broker (robot off, out of Wi-Fi range, MQTT disabled). Commands are refused
+  until it is back.
 - **A control is missing**: a robot only exposes what it can do. A robot
   without a mop has no water preset, for example.
 

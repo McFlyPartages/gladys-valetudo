@@ -52,6 +52,9 @@ Dans l'interface web de Valetudo, ouvrez **Connectivité → MQTT**, puis :
   l'autodécouverte Home Assistant est activée dans Valetudo, et que le
   préfixe de découverte est le même des deux côtés (`homeassistant` par
   défaut).
+- **Le robot apparaît injoignable** : Valetudo a perdu sa connexion au broker
+  (robot éteint, hors de portée du Wi-Fi, MQTT désactivé). Les commandes sont
+  refusées jusqu'à son retour.
 - **Une commande manque** : un robot n'expose que ce qu'il sait faire. Un
   robot sans serpillière n'a pas de réglage d'eau, par exemple.
 

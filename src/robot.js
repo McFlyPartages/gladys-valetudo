@@ -189,7 +189,12 @@ function mapVacuum({ config }) {
       },
     ],
   ];
-  return { features, states, commands };
+  // Valetudo keeps a retained "$state" topic per robot, with an MQTT last will:
+  // the only value meaning "the robot answers" is the announced one.
+  const availability = config.availability_topic
+    ? { topic: config.availability_topic, online: config.payload_available ?? 'online' }
+    : null;
+  return { features, states, commands, availability };
 }
 
 function mapSensor({ objectId, config }, identifier) {
@@ -299,7 +304,8 @@ const MAPPERS = { vacuum: mapVacuum, sensor: mapSensor, select: mapSelect };
  * Build the Gladys device of a robot and its routing tables.
  * @param {object} gladys SDK instance (only `externalIds` is used)
  * @param {{ identifier: string, name: string, model: string, entities: Map<string, object> }} robot
- * @returns {{ device: object, states: Map<string, Function[]>, commands: Map<string, Function> } | null}
+ * @returns {{ device: object, states: Map<string, Function[]>, commands: Map<string, Function>,
+ *   availability: { topic: string, online: string } | null } | null}
  *   null while the robot has not announced its `vacuum` entity yet.
  */
 export function buildRobot(gladys, robot) {
@@ -308,6 +314,7 @@ export function buildRobot(gladys, robot) {
   const states = new Map();
   const commands = new Map();
   let hasVacuum = false;
+  let availability = null;
 
   // Sorted so the feature order does not depend on the arrival order of the
   // retained messages: a different order would look like a structure change.
@@ -326,7 +333,10 @@ export function buildRobot(gladys, robot) {
     if (!mapped) {
       continue;
     }
-    hasVacuum ||= entity.component === 'vacuum';
+    if (entity.component === 'vacuum') {
+      hasVacuum = true;
+      availability = mapped.availability;
+    }
     for (const { key, ...feature } of mapped.features) {
       features.push({ ...feature, external_id: ids.feature(key) });
     }
@@ -358,5 +368,6 @@ export function buildRobot(gladys, robot) {
     },
     states,
     commands,
+    availability,
   };
 }

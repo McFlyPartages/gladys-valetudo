@@ -29,6 +29,7 @@ const entity = (component, name, config) => {
 };
 
 export const TOPICS = {
+  availability: `${BASE}/$state`,
   vacuumState: `${BASE}/hass/${IDENTIFIER}_vacuum/state`,
   vacuumCommand: `${BASE}/hass/${IDENTIFIER}_vacuum/command`,
   battery: `${BASE}/BatteryStateAttribute/level`,

@@ -16,3 +16,5 @@ the notes of the version's GitHub Release.
   autodiscovery format), whatever the model.
 - Robot state, start, stop, pause, return to dock and locate.
 - Battery level, fan speed, water and mode presets, consumables.
+- A robot disconnected from the broker shows as unreachable, and its commands
+  are refused instead of being lost.

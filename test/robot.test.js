@@ -83,6 +83,13 @@ test('no locate feature when the robot does not support it', () => {
   assert.ok(!robot.commands.has(ids.feature('locate')));
 });
 
+test('the availability topic and its "online" payload come from the announcement', () => {
+  assert.deepEqual(robotFrom(discoveryMessages()).availability, {
+    topic: TOPICS.availability,
+    online: 'ready',
+  });
+});
+
 test('no device until the vacuum entity is announced', () => {
   assert.equal(robotFrom(discoveryMessages().slice(1)), null);
 });
